@@ -86,7 +86,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
                 Place place = PlacePicker.getPlace(this, data);
-                System.out.println(place.getName());
+                mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), 18));
+                System.out.println(place.getWebsiteUri());
             }
         }
     }
