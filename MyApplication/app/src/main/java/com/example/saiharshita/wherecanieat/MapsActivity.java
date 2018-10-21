@@ -97,8 +97,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (resultCode == RESULT_OK) {
                 Place place = PlacePicker.getPlace(this, data);
                 mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), 18));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(place.getLatLng()));
                 System.out.println(place.getWebsiteUri());
+                try {
+                    builder.setLatLngBounds(new LatLngBounds(place.getLatLng(), place.getLatLng()));
+                    startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
+                } catch (GooglePlayServicesNotAvailableException | GooglePlayServicesRepairableException ex) {
+                    ex.printStackTrace();
+                }
             }
         }
     }
