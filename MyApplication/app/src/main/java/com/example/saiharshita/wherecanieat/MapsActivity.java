@@ -42,22 +42,29 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+    // These are the words that check if a certain menu has meat
+    public static final String[] BANNED_WORDS =
+            {"meat", "beef", "bbq", "chicken", "pork", "cow", "pig", "poultry",
+                    "lamb", "fish", "trout", "anchovies", "turkey", "ham", "sausage"};
+    public static final int PLACE_PICKER_REQUEST = 1;
 
-    private GoogleMap mMap;
-    protected GeoDataClient mGeoDataClient;
-    protected PlaceDetectionClient mPlaceDetectionClient;
-    private Place place;
-    private Double stat;
+    private GoogleMap mMap;  // google map
+    protected GeoDataClient mGeoDataClient;  // interface to get places and their data
+    private Place place;  // current place we are looking at
+    private Double stat;  // statistics about current place (updated by AsyncTask)
 
-    int PLACE_PICKER_REQUEST = 1;
     PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
 
+    /**
+     * Runs when app is started. Creates view, etc...
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,9 +77,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Construct a GeoDataClient.
         mGeoDataClient = Places.getGeoDataClient(this);
-
-        // Construct a PlaceDetectionClient.
-        mPlaceDetectionClient = Places.getPlaceDetectionClient(this);
     }
 
 
@@ -101,6 +105,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    /**
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
@@ -129,6 +139,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    /**
+     *
+     */
     protected void OnButtonCont() {
         mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(),18));
@@ -143,6 +156,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    /**
+     * This inner class invokes a thread that runs in the background to
+     * fetch menu details from a URL
+     */
     class RetreiveFeedTask extends AsyncTask<String, Void, Void> {
         @Override
         protected Void doInBackground(String... urls) {
@@ -180,11 +197,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return null;
         }
 
+        /**
+         * Returns whether or not a certain line contains an ingredient that is non-vegetarian
+         * @param line: line of website we are reading
+         * @return true if the line contains one of the banned words
+         *         false otherwise.
+         */
         private boolean lineContainsMeat(String line) {
-            return line.contains("meat") || line.contains("pork") ||
-                    line.contains("chicken") || line.contains("beef") || line.contains("bbq");
+            for (String word : BANNED_WORDS) {
+                if (line.contains(word)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
+        /**
+         * Standardizes a website name so it works with https
+         * WARNING: we assume that the menus are located at
+         * https://[hostdomain]/menu
+         *
+         * @param host: basic[hostdomain]
+         * @return a standardized url that leads to the restaurant's menu
+         */
         private String stdizeURL(String host) {
             return "https://" + host + "/menu";
         }
