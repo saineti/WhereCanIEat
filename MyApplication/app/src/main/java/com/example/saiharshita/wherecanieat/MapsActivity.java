@@ -3,6 +3,9 @@ package com.example.saiharshita.wherecanieat;
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
@@ -43,11 +46,13 @@ import java.util.Iterator;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPoiClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     protected GeoDataClient mGeoDataClient;
     protected PlaceDetectionClient mPlaceDetectionClient;
+    private Place place;
+    private Double stat;
 
     int PLACE_PICKER_REQUEST = 1;
     PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
@@ -67,7 +72,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Construct a PlaceDetectionClient.
         mPlaceDetectionClient = Places.getPlaceDetectionClient(this);
-
     }
 
 
@@ -84,7 +88,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in UW Ave and move the camera
         LatLng ave = new LatLng(47.6, -122.3);
-        mMap.setOnPoiClickListener(this);
+        // mMap.setOnPoiClickListener(this);
         mMap.addMarker(new MarkerOptions().position(ave).title("Marker in Ave"));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ave, 18));
 
@@ -94,25 +98,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } catch (GooglePlayServicesNotAvailableException | GooglePlayServicesRepairableException ex) {
             ex.printStackTrace();
         }
-
-
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Place place = PlacePicker.getPlace(this, data);
-                mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(place.getLatLng()));
-                try {
-                    builder.setLatLngBounds(new LatLngBounds(place.getLatLng(), place.getLatLng()));
-                    startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
-                    // retrieve menu information from website
-                    new RetreiveFeedTask().execute(place.getWebsiteUri().toString());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
+                place = PlacePicker.getPlace(this, data);
+                // retrieve menu information from website
+                new RetreiveFeedTask().execute(place.getWebsiteUri().toString());
+                AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+                alertDialog.setTitle("Dietary Statistics");
+                alertDialog.setMessage("Add a slider for vegetarian friendly with : " + stat);
+                alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Go Back",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                OnButtonCont();
+                            }
+                        });
+                alertDialog.show();
             }
+        }
+    }
+
+    protected void OnButtonCont() {
+        mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(),18));
+        System.out.println(place.getWebsiteUri());
+        try {
+           LatLng sw = new LatLng(place.getLatLng().latitude - 0.001, place.getLatLng().longitude - 0.001);
+           LatLng ne = new LatLng(place.getLatLng().latitude + 0.001, place.getLatLng().longitude + 0.001);
+           builder.setLatLngBounds(new LatLngBounds(sw, ne));
+           startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
+        } catch (Exception ex) {
+           ex.printStackTrace();
         }
     }
 
@@ -146,6 +165,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 System.out.println((double) meatCount / (double) lineCount * 100);
                 in.close();
+                stat = (double) meatCount / (double) lineCount * 100;
             } catch (Exception e) {
                 e.printStackTrace();
             }
