@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.widget.SeekBar;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
@@ -126,7 +127,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 AlertDialog alertDialog = new AlertDialog.Builder(this).create();
                 alertDialog.setTitle("Dietary Statistics");
-                alertDialog.setMessage("Add a slider for vegetarian friendly with : " + stat);
+                alertDialog.setMessage("Percentage of food that's vegetarian friendly :");
+                SeekBar seek = new SeekBar(this);
+                seek.setMax(100);
+                seek.setProgress((int) (stat * 100));
+                // seek.setEnabled(false);
+
+                alertDialog.setView(seek);
+
                 alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Go Back",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
