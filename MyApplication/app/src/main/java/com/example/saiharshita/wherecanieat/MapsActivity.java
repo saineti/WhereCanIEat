@@ -1,5 +1,6 @@
 package com.example.saiharshita.wherecanieat;
 
+import android.graphics.Point;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
@@ -9,10 +10,17 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.location.places.GeoDataClient;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.PlaceDetectionClient;
+import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.gms.maps.model.PointOfInterest;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPoiClickListener {
 
     private GoogleMap mMap;
+    protected GeoDataClient mGeoDataClient;
+    protected PlaceDetectionClient mPlaceDetectionClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,14 +30,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-    }
 
+        // Construct a GeoDataClient.
+        mGeoDataClient = Places.getGeoDataClient(this);
+
+        // Construct a PlaceDetectionClient.
+        mPlaceDetectionClient = Places.getPlaceDetectionClient(this);
+    }
 
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
      * If Google Play services is not installed on the device, the user will be prompted to install
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
@@ -38,9 +49,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        LatLng ave = new LatLng(47.658321, -122.313226);
+        mMap.addMarker(new MarkerOptions().position(ave).title("The Ave"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ave, 18));
+        mMap.setOnPoiClickListener(this);
+
+        // int PLACE_PICKER_REQUEST = 1;
+        // PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
+
+        // startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
+    }
+
+    @Override
+    public void onPoiClick(PointOfInterest poi) {
+        System.out.println(poi.name);
     }
 }
