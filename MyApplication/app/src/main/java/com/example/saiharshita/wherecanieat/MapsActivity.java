@@ -6,6 +6,7 @@ import android.os.Bundle;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.location.places.PlaceBufferResponse;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -26,8 +27,17 @@ import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceDetectionClient;
 import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.maps.model.PointOfInterest;
+import com.google.android.gms.tasks.Task;
 
 import android.content.Intent;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Iterator;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPoiClickListener {
 
@@ -95,7 +105,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onPoiClick(PointOfInterest poi) {
-        System.out.println(poi.name);
-
+        Task<PlaceBufferResponse> task = mGeoDataClient.getPlaceById(poi.placeId);
+        while(!task.isSuccessful()) {
+            // ...
+        }
+        Iterator<Place> iter = task.getResult().iterator();
+        while (iter.hasNext()) {
+            try {
+                // only works for websites with their menus in the /menu subdirectory?
+                System.out.println("http://" + new URI(iter.next().getWebsiteUri().toString()).toURL().getHost() + "/menu");
+            } catch (Exception e) {
+                System.out.println("ERROR");
+            }
+        }
     }
 }
