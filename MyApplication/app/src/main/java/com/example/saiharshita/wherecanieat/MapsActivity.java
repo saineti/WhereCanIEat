@@ -1,6 +1,6 @@
 package com.example.saiharshita.wherecanieat;
 
-
+import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
@@ -34,10 +34,14 @@ import android.content.Intent;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Iterator;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Iterator;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPoiClickListener {
 
@@ -90,6 +94,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } catch (GooglePlayServicesNotAvailableException | GooglePlayServicesRepairableException ex) {
             ex.printStackTrace();
         }
+
+
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -98,31 +104,61 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Place place = PlacePicker.getPlace(this, data);
                 mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(place.getLatLng()));
-                System.out.println(place.getWebsiteUri());
                 try {
                     builder.setLatLngBounds(new LatLngBounds(place.getLatLng(), place.getLatLng()));
                     startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
-                } catch (GooglePlayServicesNotAvailableException | GooglePlayServicesRepairableException ex) {
+                    // retrieve menu information from website
+                    new RetreiveFeedTask().execute(place.getWebsiteUri().toString());
+                } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             }
         }
     }
 
-    @Override
-    public void onPoiClick(PointOfInterest poi) {
-        Task<PlaceBufferResponse> task = mGeoDataClient.getPlaceById(poi.placeId);
-        while(!task.isSuccessful()) {
-            // ...
-        }
-        Iterator<Place> iter = task.getResult().iterator();
-        while (iter.hasNext()) {
+    class RetreiveFeedTask extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... urls) {
             try {
-                // only works for websites with their menus in the /menu subdirectory?
-                System.out.println("http://" + new URI(iter.next().getWebsiteUri().toString()).toURL().getHost() + "/menu");
+                URL url = new URL(stdizeURL(new URL(urls[0]).getHost()));
+                System.out.println(url);
+                HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.connect();
+                InputStream is = null;
+                if (conn.getResponseCode() == HttpsURLConnection.HTTP_OK) {
+                    is = conn.getInputStream();
+                }
+
+                if (is == null) {
+                    System.out.println("Website not found");
+                    return null;
+                }
+                BufferedReader in = new BufferedReader(new InputStreamReader(is));
+                String line;
+                int lineCount = 0;
+                int meatCount = 0;
+                while ((line = in.readLine()) != null) {
+                    if (lineContainsMeat(line)) {
+                        meatCount++;
+                    }
+                    lineCount++;
+                }
+                System.out.println((double) meatCount / (double) lineCount * 100);
+                in.close();
             } catch (Exception e) {
-                System.out.println("ERROR");
+                e.printStackTrace();
             }
+            return null;
+        }
+
+        private boolean lineContainsMeat(String line) {
+            return line.contains("meat") || line.contains("pork") ||
+                    line.contains("chicken") || line.contains("beef") || line.contains("bbq");
+        }
+
+        private String stdizeURL(String host) {
+            return "https://" + host + "/menu";
         }
     }
 }
