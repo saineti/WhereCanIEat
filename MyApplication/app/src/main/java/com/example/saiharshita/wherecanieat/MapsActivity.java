@@ -43,6 +43,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -105,7 +106,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (resultCode == RESULT_OK) {
                 place = PlacePicker.getPlace(this, data);
                 // retrieve menu information from website
-                new RetreiveFeedTask().execute(place.getWebsiteUri().toString());
+                if (place.getWebsiteUri() != null) {
+                    AsyncTask<String, Void, Void> t = new RetreiveFeedTask().execute(place.getWebsiteUri().toString());
+                    try {
+                        t.get(5000, TimeUnit.MILLISECONDS);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
                 AlertDialog alertDialog = new AlertDialog.Builder(this).create();
                 alertDialog.setTitle("Dietary Statistics");
                 alertDialog.setMessage("Add a slider for vegetarian friendly with : " + stat);
