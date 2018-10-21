@@ -1,14 +1,17 @@
 package com.example.saiharshita.wherecanieat;
 
-import android.graphics.Point;
+
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.places.GeoDataClient;
 import com.google.android.gms.location.places.Places;
@@ -16,16 +19,30 @@ import com.google.android.gms.location.places.PlaceDetectionClient;
 import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.maps.model.PointOfInterest;
 
+
+import com.google.android.gms.location.places.GeoDataClient;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceDetectionClient;
+import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.gms.maps.model.PointOfInterest;
+
+import android.content.Intent;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnPoiClickListener {
 
     private GoogleMap mMap;
     protected GeoDataClient mGeoDataClient;
     protected PlaceDetectionClient mPlaceDetectionClient;
 
+    int PLACE_PICKER_REQUEST = 1;
+    PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -36,7 +53,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Construct a PlaceDetectionClient.
         mPlaceDetectionClient = Places.getPlaceDetectionClient(this);
+
     }
+
 
     /**
      * Manipulates the map once available.
@@ -46,22 +65,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * installed Google Play services and returned to the app.
      */
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public void onMapReady (GoogleMap googleMap){
         mMap = googleMap;
 
-        LatLng ave = new LatLng(47.658321, -122.313226);
-        mMap.addMarker(new MarkerOptions().position(ave).title("The Ave"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ave, 18));
+        // Add a marker in UW Ave and move the camera
+        LatLng ave = new LatLng(47.6, -122.3);
         mMap.setOnPoiClickListener(this);
+        mMap.addMarker(new MarkerOptions().position(ave).title("Marker in Ave"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ave, 18));
 
-        // int PLACE_PICKER_REQUEST = 1;
-        // PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
+        try {
+            builder.setLatLngBounds(new LatLngBounds(new LatLng(47.656851, -122.313826), new LatLng(47.659790, -122.31261)));
+            startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
+        } catch (GooglePlayServicesNotAvailableException | GooglePlayServicesRepairableException ex) {
+            ex.printStackTrace();
+        }
+    }
 
-        // startActivityForResult(builder.build(this), PLACE_PICKER_REQUEST);
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PLACE_PICKER_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                Place place = PlacePicker.getPlace(this, data);
+                System.out.println(place.getName());
+            }
+        }
     }
 
     @Override
     public void onPoiClick(PointOfInterest poi) {
         System.out.println(poi.name);
+
     }
 }
