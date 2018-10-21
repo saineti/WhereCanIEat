@@ -1,16 +1,20 @@
+/* Copyright (c)2018 Heather Harvey, Sai Harshita Neti, James Shin
+ * We utilized the Maps SDK for Android and Places SDK for Android API's
+ * provided in the Google Cloud Platform.
+ */
+
 package com.example.saiharshita.wherecanieat;
 
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.widget.SeekBar;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.location.places.PlaceBufferResponse;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -20,31 +24,13 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.places.GeoDataClient;
 import com.google.android.gms.location.places.Places;
-import com.google.android.gms.location.places.PlaceDetectionClient;
 import com.google.android.gms.location.places.ui.PlacePicker;
-import com.google.android.gms.maps.model.PointOfInterest;
-
-
-import com.google.android.gms.location.places.GeoDataClient;
-import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.PlaceDetectionClient;
-import com.google.android.gms.location.places.ui.PlacePicker;
-import com.google.android.gms.maps.model.PointOfInterest;
-import com.google.android.gms.tasks.Task;
-
-import android.content.Intent;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -59,7 +45,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;  // google map
     protected GeoDataClient mGeoDataClient;  // interface to get places and their data
     private Place place;  // current place we are looking at
-    private Double stat;  // statistics about current place (updated by AsyncTask)
+    private Double stat = -1.0;  // statistics about current place (updated by AsyncTask)
 
     PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
 
@@ -107,7 +93,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     *
+     * A callback function that produces a dialog box with information about how vegetarian
+     * friendly a restaurant that the user selected is.
      * @param requestCode
      * @param resultCode
      * @param data
@@ -125,16 +112,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         e.printStackTrace();
                     }
                 }
+
+
                 AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-                alertDialog.setTitle("Dietary Statistics");
-                alertDialog.setMessage("Percentage of food that's vegetarian friendly :");
-                SeekBar seek = new SeekBar(this);
-                seek.setMax(100);
-                seek.setProgress((int) (stat * 100));
-                // seek.setEnabled(false);
-
-                alertDialog.setView(seek);
-
+                if (stat != -1.0) {
+                    alertDialog.setMessage("Percentage of food that's not vegetarian friendly :");
+                    SeekBar seek = new SeekBar(this);
+                    seek.setMax(100);
+                    seek.setProgress((int) (stat * 100));
+                    if ((int) (stat * 100) < 15) {
+                        alertDialog.setTitle("Vegetarian Friendly");
+                        alertDialog.setIcon(android.R.drawable.checkbox_on_background);
+                    } else {
+                        alertDialog.setTitle("Not Vegetarian Friendly");
+                        alertDialog.setIcon(android.R.drawable.ic_delete);
+                    }
+                    // seek.setEnabled(false);
+                    alertDialog.setView(seek);
+                } else {
+                    alertDialog.setMessage("No information available");
+                }
                 alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Go Back",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
@@ -148,7 +145,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     *
+     * A callback function that sets the application back to a state in which the user
+     * can view nearby places to the device's current location on a map.
      */
     protected void OnButtonCont() {
         mMap.addMarker(new MarkerOptions().position(place.getLatLng()).title("Selected place marker"));
